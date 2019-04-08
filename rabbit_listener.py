@@ -2,6 +2,8 @@
 import threading
 import functools
 import datetime
+import syslog
+import traceback
 from pika import exceptions
 from base_rabbit_connector import BaseRabbitMQ
 
@@ -23,9 +25,17 @@ class RabbitMQListener(BaseRabbitMQ):
         super(RabbitMQListener, self).__init__(conf_dict)
         # адекватная передача ссылки на функцию-обработчик сообщения
         self.handler_link = self.get_settings('HANDLER_LINK')
-        self.run()
 
-    def close_connect(self):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        """
+        Необходимые "магические методы" для реалзации функционала with
+        :param exc_type:
+        :param exc_value:
+        :param traceback:
+        :return:
+        """
+        syslog.openlog(self.get_settings('LOG_NAME'))
+        syslog.syslog(syslog.LOG_INFO, '{} Exiting...{}'.format(datetime.datetime.now(), traceback.format_exc(limit=2)))
         self.channel.stop_consuming()
         self.connection.close()
         # Wait for all threads to complete
@@ -34,18 +44,11 @@ class RabbitMQListener(BaseRabbitMQ):
 
     def run(self):
         while True:
-            try:
-                self.connect()
-                self.threads = []
-                on_message_callback = functools.partial(self.on_message)
-                self.channel.basic_consume(on_message_callback,
-                                           queue=self.get_settings('QUEUE_NAME'))
-                self.channel.start_consuming()
-            except exceptions.ConnectionClosed:
-                # Wait for all threads to complete
-                for thread in self.threads:
-                    thread.join()
-                # write log here
+            self.threads = []
+            on_message_callback = functools.partial(self.on_message)
+            self.channel.basic_consume(on_message_callback,
+                                       queue=self.get_settings('QUEUE_NAME'))
+            self.channel.start_consuming()
 
     def ack_message(self, ch, delivery_tag):
         """

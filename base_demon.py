@@ -80,18 +80,6 @@ class Demon:
         syslog.syslog(syslog.LOG_INFO, '{} deleting pid file...'.format(datetime.datetime.now()))
         os.remove(self.pidfile)
 
-    def handle_exit(self):
-
-        self.listener.close_connect()
-        self.delpid()
-        syslog.syslog(syslog.LOG_INFO, '{} handled exit functions'.format(datetime.datetime.now()))
-
-    def signal_assign(self):
-        # assignee = SignalHandler()
-        # for i in iter(self.sigDict):
-        #     assignee.register(i, self.sigDict[i])
-        signal.signal(signal.SIGTERM, self.handle_exit)
-
     def start(self):
         """
         Start the daemon
@@ -113,7 +101,6 @@ class Demon:
         # Start the daemon
         syslog.syslog(syslog.LOG_INFO, '{} starting demon process pid: {}'.format(datetime.datetime.now(), pid))
         self.daemonize()
-        self.signal_assign()
         self.run()
 
     sigDict = {}
@@ -158,10 +145,6 @@ class Demon:
         self.stop()
         self.start()
 
-    def close_connect(self):
-        self.listener.close_connect()
-
     def run(self):
-        atexit.register(self.close_connect)
-        self.listener = rabbit_listener.RabbitMQListener(self.conf_dict)
-
+        with rabbit_listener.RabbitMQListener(self.conf_dict) as listener_obj:
+            listener_obj.run()

@@ -14,11 +14,6 @@ class BaseRabbitMQ(object):
         """
         пример файла ..exmaple.conf
         :param conf_dict: словарь с настроечными данными
-        """
-        self.conf_dict = conf_dict
-
-    def connect(self):
-        """
         connect to rabbitmq
         NOTE: prefetch is set to 1 here for test to keep the number of threads created
         to a reasonable amount. We can to test with different prefetch values
@@ -26,12 +21,13 @@ class BaseRabbitMQ(object):
 
         :return: None (void)
         """
+        self.conf_dict = conf_dict
         self.params = pika.ConnectionParameters(
             host=self.get_settings('RABBITMQ_HOST'),
             port=self.get_settings('RABBITMQ_PORT'),
             credentials=pika.credentials.PlainCredentials(self.principal, self.token),
-            heartbeat_interval=self.get_settings('HEARTBEAT_INTERVAL'),
-            blocked_connection_timeout=self.get_settings('BLOCKED_CONNECTION_TIMEOUT'),
+            heartbeat_interval=int(self.get_settings('HEARTBEAT_INTERVAL')),
+            blocked_connection_timeout=int(self.get_settings('BLOCKED_CONNECTION_TIMEOUT')),
         )
         self.connection = pika.BlockingConnection(
             parameters=self.params,
@@ -44,6 +40,26 @@ class BaseRabbitMQ(object):
             auto_delete=False,
         )
         self.channel.basic_qos(prefetch_count=1)
+
+    def __enter__(self):
+        """
+        Необходимые "магические методы" для реалзации функционала with
+        Использование:
+        with RabbitMQSender() as sender_obj:
+            # use sender_obj (используем объект тут)
+        :return:
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Необходимые "магические методы" для реалзации функционала with
+        :param exc_type:
+        :param exc_value:
+        :param traceback:
+        :return:
+        """
+        self.connection.close()
 
     def get_settings(self, setting):
         if type(self.conf_dict) is not dict:
@@ -60,10 +76,10 @@ class BaseRabbitMQ(object):
         не будет участвовать в аутентификации поэтому может быть любым
         :return: principal пользователя
         """
-        if self.get_settings('USE_GSS_API'):
+        if int(self.get_settings('USE_GSS_API')):
             return self.get_settings('PRINCIPAL')
         else:
-            self.get_settings('RABBIT_COMMON_USER')
+            return self.get_settings('RABBIT_COMMON_USER')
 
     @property
     def token(self):
@@ -71,7 +87,7 @@ class BaseRabbitMQ(object):
         для передачи в поле пароль GSS токена
         :return: GSSAPI token (либо пароль в тестовой среде)
         """
-        if self.get_settings('USE_GSS_API'):
+        if int(self.get_settings('USE_GSS_API')):
             result, context = kerberos.authGSSClientInit(self.get_settings('RABBITMQ_SPS'),
                                                          gssflags=kerberos.GSS_C_SEQUENCE_FLAG,
                                                          principal=self.get_settings('PRINCIPAL'))
