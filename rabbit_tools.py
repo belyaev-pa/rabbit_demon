@@ -1,4 +1,4 @@
-import sys
+# -*- coding: utf-8 -*-
 import base_demon
 import ConfigParser
 from demon import DaemonConfigurator, UnsupportedCommandException
@@ -6,6 +6,12 @@ from rabbit_sender import RabbitMQSender
 
 
 def create_demon(command, conf_dict):
+    """
+    Функция создания и управлению демоном
+    :param command: строка содержащая команду start, stop, restart
+    :param conf_dict: словарь с настройками
+    :return: void
+    """
     daemon = base_demon.Demon(pidfile=conf_dict['PID_FILE_PATH'],
                               conf_dict=conf_dict,
                               log_name=conf_dict['LOG_NAME'])
@@ -19,6 +25,11 @@ def create_demon(command, conf_dict):
 
 
 def parse_conf(conf_file_path):
+    """
+    Функция парсинга конфиг файла
+    :param conf_file_path: путь до файла
+    :return: сформированный словарь настроек
+    """
     config = ConfigParser.ConfigParser()
     config.read(conf_file_path)
     conf_dict = dict(
@@ -40,5 +51,12 @@ def parse_conf(conf_file_path):
 
 
 def rabbit_send(conf_dict, msg, queue_name):
+    """
+    Функция посылки сообщения в RabbitMQ
+    :param conf_dict: словарь настроек
+    :param msg: передаваемое сообщение (словарь)
+    :param queue_name: название очереди - строка
+    :return: void
+    """
     with RabbitMQSender(conf_dict, msg, queue_name) as sender_obj:
         sender_obj.send()
