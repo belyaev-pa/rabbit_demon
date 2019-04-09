@@ -1,4 +1,4 @@
-from rabbit_tools import rabbit_send, parse_conf
+from tps_lib_common.rabbit_tools import rabbit_send, parse_conf
 
 
 if __name__ == "__main__":

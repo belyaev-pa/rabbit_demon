@@ -6,6 +6,7 @@ Description
 
 Example
 ===========
+После установки пакета tps-lib-common-version.el7.sz.x86_64.rpm нужно воспользоваться примерами.
 Пример создания демона находиться в example_daemon.py
 Пример отправки сообщения находится в example_send.py
 

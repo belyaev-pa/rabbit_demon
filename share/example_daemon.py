@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from rabbit_tools import create_daemon, parse_conf
+from tps_lib_common.rabbit_tools import create_daemon, parse_conf
 import sys
 
 
